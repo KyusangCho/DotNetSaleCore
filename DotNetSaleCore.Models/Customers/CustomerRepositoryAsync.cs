@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DotNetSaleCore.Models
@@ -9,29 +12,80 @@ namespace DotNetSaleCore.Models
     /// </summary>
     public class CustomerRepositoryAsync : ICustomerRepositoryAsync
     {
-        public Task<Customer> AddAsync(Customer model)
+        private readonly DotNetSaleCoreDbContext _context;
+        private readonly ILogger _logger;
+
+        public CustomerRepositoryAsync(DotNetSaleCoreDbContext context, ILoggerFactory loggerFactory)
         {
-            throw new NotImplementedException();
+            this._context = context;
+            this._logger = loggerFactory.CreateLogger("CustomerRepositoryAsync");
         }
 
-        public Task<bool> DeleteAsync(int id)
+        // 입력
+        public async Task<Customer> AddAsync(Customer model)
         {
-            throw new NotImplementedException();
+            _context.Add(model);
+            try
+            {
+                await _context.SaveChangesAsync(); 
+            }
+            catch (Exception exp)
+            {
+
+                _logger.LogError($"Error in {nameof(AddAsync)}: " + exp.Message); 
+            }
+            return model; 
         }
 
-        public Task<bool> EditAsync(Customer model)
+        // 출력 
+        public async Task<List<Customer>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            return await _context.Customers.OrderByDescending(c => c.CustomerId)
+                //.Include(c => c.Mobile1)
+                .ToListAsync(); 
         }
 
-        public Task<List<Customer>> GetAllAsync()
+        // 상세
+        public async Task<Customer> GetAsync(int id)
         {
-            throw new NotImplementedException();
+            return await _context.Customers
+                //.Include(c => c.CustomerId)
+                .SingleOrDefaultAsync(c => c.CustomerId == id); 
         }
 
-        public Task<Customer> GetAsync(int id)
+        // 수정
+        public async Task<bool> EditAsync(Customer model)
         {
-            throw new NotImplementedException();
+            _context.Customers.Attach(model);
+            _context.Entry(model).State = EntityState.Modified;
+            try
+            {
+                return (await _context.SaveChangesAsync() > 0 ? true : false); 
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError($"Error in {nameof(EditAsync)}: " + exp.Message); 
+            }
+            return false; 
         }
+
+        // 삭제
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var customer = await _context.Customers
+                                        .SingleOrDefaultAsync(c => c.CustomerId == id);
+            _context.Remove(customer);
+            try
+            {
+                return (await _context.SaveChangesAsync() > 0 ? true : false); 
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in {nameof(DeleteAsync)}: " + ex.Message); 
+            }
+            return false; 
+        }
+
+        // 페이징 
     }
 }
