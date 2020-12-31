@@ -40,9 +40,10 @@ namespace DotNetSaleCore.Models
         // 출력 
         public async Task<List<Customer>> GetAllAsync()
         {
-            return await _context.Customers.OrderByDescending(c => c.CustomerId)
+            var customers = await _context.Customers.OrderByDescending(c => c.CustomerId)
                 //.Include(c => c.Mobile1)
-                .ToListAsync(); 
+                .ToListAsync();
+            return customers; 
         }
 
         // 상세
@@ -87,5 +88,31 @@ namespace DotNetSaleCore.Models
         }
 
         // 페이징 
+        public async Task<PagingResult<Customer>> GetAllAsync(int skip, int take)
+        {
+            var totalRecords = await _context.Customers.CountAsync();
+            var customers = await _context.Customers
+                .OrderByDescending(c => c.CustomerId)
+                .Skip(skip * take)
+                .Take(take)
+                .ToListAsync();
+            return new PagingResult<Customer>(customers, totalRecords);
+        }
     }
+
+    public class PagingResult<T> 
+    {
+        public List<Customer> customers;
+        public List<Customer> Records;
+        public int totalRecords;
+
+        public PagingResult(List<Models.Customer> customers, int totalRecords)
+        {
+            this.customers = customers;
+            this.totalRecords = totalRecords;
+            this.Records = customers;
+        }
+    }
+
+    
 }

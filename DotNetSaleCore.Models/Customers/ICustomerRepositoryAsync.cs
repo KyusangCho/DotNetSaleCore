@@ -15,5 +15,7 @@ namespace DotNetSaleCore.Models
         Task<bool> EditAsync(Customer model); // 수정 
         Task<bool> DeleteAsync(int id);     // 삭제
 
+        Task<PagingResult<Customer>> GetAllAsync(int skip, int take);     //출력
+
     }
 }
